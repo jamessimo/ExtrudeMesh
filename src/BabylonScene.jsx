@@ -28,6 +28,31 @@ function getShared(indices, positions) {
   return shared;
 }
 
+    // set the color for the ghost box
+    function clearBoxColor(color, colors, positions, mesh){
+      colors = Array.from({ length: positions.length / 3 }, () =>
+        color.asArray()
+      ).flat();
+      mesh.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors);
+    };
+
+    // set the color for the highlighted face
+    function highlightFace(face, color,colors, indices, mesh){
+      const facet = 2 * Math.floor(face);
+
+      for (var i = 0; i < 6; i++) {
+        const vertex = indices[3 * facet + i];
+
+        colors[4 * vertex] = color.r;
+        colors[4 * vertex + 1] = color.g;
+        colors[4 * vertex + 2] = color.b;
+        colors[4 * vertex + 3] = color.a;
+      }
+
+      mesh.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors);
+    };
+
+
 const BabylonScene = () => {
   // Creating reference for scene
   const sceneRef = useRef(null);
@@ -72,7 +97,7 @@ const BabylonScene = () => {
     // );
     box.hasVertexAlpha = true;
     // Convert the shading of the mesh from smooth or AutoSmooth (whichever the default is) to flat shaded
-    box.convertToFlatShadedMesh();
+    //box.convertToFlatShadedMesh();
 
     box.position = new BABYLON.Vector3(0, 0, 0);
 
@@ -122,29 +147,6 @@ const BabylonScene = () => {
       scene.render();
     });
 
-    // set the color for the ghost box
-    const clearBoxColor = (color) => {
-      colors = Array.from({ length: positions.length / 3 }, () =>
-        color.asArray()
-      ).flat();
-      box.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors);
-    };
-
-    // set the color for the highlighted face
-    const highlightFace = (face, color) => {
-      const facet = 2 * Math.floor(face);
-
-      for (var i = 0; i < 6; i++) {
-        const vertex = indices[3 * facet + i];
-
-        colors[4 * vertex] = color.r;
-        colors[4 * vertex + 1] = color.g;
-        colors[4 * vertex + 2] = color.b;
-        colors[4 * vertex + 3] = color.a;
-      }
-
-      box.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors);
-    };
 
     // Using a counter to check for the 2 clicks, one to select the mesh and move the face to the set location and the other to confirm the location, just like in blender
 
@@ -177,8 +179,8 @@ const BabylonScene = () => {
             },
           });
           // set the colors for the highlighted face and the ghosted box
-          clearBoxColor(BOX_TRANSPARENT_COLOR);
-          highlightFace(face, GHOST_COLOR);
+          clearBoxColor(BOX_TRANSPARENT_COLOR,colors, positions, box);
+          highlightFace(face, GHOST_COLOR,colors, indices, box);
 
           // create a temporary plane for visual feedback during extrusion and position it at the location of the selected face
           plane = BABYLON.MeshBuilder.CreatePlane("temp", {}, scene);
@@ -263,14 +265,13 @@ const BabylonScene = () => {
           },
         });
       } else {
-        clearBoxColor(BOX_COLOR);
 
         const hit = scene.pick(scene.pointerX, scene.pointerY);
 
         if (hit.pickedMesh) {
           // highlight the picked face
           const face = hit.faceId / 2;
-          highlightFace(face, HOVER_COLOR);
+          highlightFace(face, HOVER_COLOR, colors, indices, hit.pickedMesh);
         }
       }
     };
@@ -307,7 +308,7 @@ const BabylonScene = () => {
         { size: 1, updatable: true },
         scene
       );
-      box.convertToFlatShadedMesh();
+      //box.convertToFlatShadedMesh();
       box.position = new BABYLON.Vector3(0, 0, 0);
       positions = box.getVerticesData(BABYLON.VertexBuffer.PositionKind);
       console.log("Positions Reset DONE");
